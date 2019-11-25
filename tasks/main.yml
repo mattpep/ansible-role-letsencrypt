@@ -1,0 +1,66 @@
+---
+- name: Ensure Certificate Directory exists
+  file:
+    dest: '{{ letsencrypt_certs_dir }}'
+    state: directory
+
+- name: Create account key
+  shell: 'ssh-keygen -t rsa -b 2048 -C "{{ letsencrypt_account_email }}" -f /etc/letsencrypt/id_rsa.letsencrypt -q -N ""'
+  args:
+    creates: /etc/letsencrypt/id_rsa.letsencrypt
+  when:
+    letsencrypt_account_email != ''
+
+- name: Create Domain key
+  shell: 'ssh-keygen -t rsa -b 2048 -C "{{ letsencrypt_account_email }}" -f /etc/letsencrypt/id_rsa.{{ letsencrypt_pri_cert_domain }} -q -N ""'
+  args:
+    creates: '/etc/letsencrypt/id_rsa.{{ letsencrypt_pri_cert_domain }}'
+
+- name: Create Certificate Signing Request
+  shell: 'openssl req -new -nodes -key /etc/letsencrypt/id_rsa.{{ letsencrypt_pri_cert_domain }} -out {{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.csr -subj "{{ letsencrypt_csr_subject }}" {% if letsencrypt_add_cert_domains|length >=1 %} -reqexts SAN -config <(cat /etc/ssl/openssl.cnf ; printf "[SAN]\nsubjectAltName={% for certdomain in letsencrypt_add_cert_domains %}DNS.{{ loop.index }}:{{ certdomain }}{% if loop.index != loop.length %},{% endif %}{% endfor %}"{% endif %})'
+  args:
+    executable: /bin/bash
+    creates: '{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.csr'
+
+- name: Issue letsencrypt Challenge
+  letsencrypt:
+    acme_directory: "{{ letsencrypt_api_endpoint }}"
+    account_key: '/etc/letsencrypt/id_rsa.letsencrypt'
+    challenge: http-01
+    csr: '{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.csr'
+    dest: '{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.crt'
+  register: letsencrypt_challenge
+
+- name: make challenge directory
+  file:
+    state: directory
+    path: "{{ item }}"
+  with_items:
+    - "{{ letsencrypt_site_dir }}/.well-known"
+    - "{{ letsencrypt_site_dir }}/.well-known/acme-challenge"
+
+- name: Store validation tokens
+  copy:
+    # item['resource'] has the prefix '/.well-known/acme-challenge' so we just prepend the sitedir here
+    dest: "{{ letsencrypt_site_dir }}/{{ item.value['http-01']['resource'] }}"
+    content: "{{ item.value['http-01']['resource_value'] }}"
+  when: letsencrypt_challenge.changed
+  with_dict: "{{ letsencrypt_challenge['challenge_data'] }}"
+
+- name: Validate Challenge and save certificate
+  letsencrypt:
+    acme_directory: "{{ letsencrypt_api_endpoint }}"
+    account_key: '/etc/letsencrypt/id_rsa.letsencrypt'
+    challenge: http-01
+    csr: '{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.csr'
+    dest: '{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.crt'
+    data: "{{ letsencrypt_challenge }}"
+  register: certificate
+
+- name: restart nginx
+  debug: msg="Reloading nginx due to changed certificate"
+  when: certificate.changed and letsencrypt_handle_nginx
+  notify:
+    - restart nginx
+
+
