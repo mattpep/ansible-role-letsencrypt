@@ -5,14 +5,14 @@
     state: directory
 
 - name: Create account key
-  shell: 'ssh-keygen -t rsa -b 2048 -C "{{ letsencrypt_account_email }}" -f "{{ letsencrypt_certs_dir }}/id_rsa.letsencrypt" -q -N ""'
+  command: 'ssh-keygen -t rsa -b 2048 -C "{{ letsencrypt_account_email }}" -f "{{ letsencrypt_certs_dir }}/id_rsa.letsencrypt" -q -N ""'
   args:
     creates: "{{ letsencrypt_certs_dir }}/id_rsa.letsencrypt"
   when:
     letsencrypt_account_email != ''
 
 - name: Create Domain key
-  shell: 'ssh-keygen -t rsa -b 2048 -C "{{ letsencrypt_account_email }}" -f "{{ letsencrypt_certs_dir }}/id_rsa.{{ letsencrypt_pri_cert_domain }}" -q -N ""'
+  command: 'ssh-keygen -t rsa -b 2048 -C "{{ letsencrypt_account_email }}" -f "{{ letsencrypt_certs_dir }}/id_rsa.{{ letsencrypt_pri_cert_domain }}" -q -N ""'
   args:
     creates: '{{ letsencrypt_certs_dir }}/id_rsa.{{ letsencrypt_pri_cert_domain }}'
 
@@ -30,6 +30,8 @@
     csr: '{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.csr'
     dest: '{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.crt'
   register: letsencrypt_challenge
+  notify:
+    - Store validation tokens
 
 - name: make challenge directory
   file:
@@ -38,14 +40,6 @@
   with_items:
     - "{{ letsencrypt_site_dir }}/.well-known"
     - "{{ letsencrypt_site_dir }}/.well-known/acme-challenge"
-
-- name: Store validation tokens
-  copy:
-    # item['resource'] has the prefix '/.well-known/acme-challenge' so we just prepend the sitedir here
-    dest: "{{ letsencrypt_site_dir }}/{{ item.value['http-01']['resource'] }}"
-    content: "{{ item.value['http-01']['resource_value'] }}"
-  when: letsencrypt_challenge.changed
-  with_dict: "{{ letsencrypt_challenge['challenge_data'] }}"
 
 - name: Validate Challenge and save certificate
   letsencrypt:
