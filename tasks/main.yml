@@ -8,16 +8,14 @@
   command: 'ssh-keygen -t rsa -b 2048 -C "{{ letsencrypt_account_email }}" -f "{{ letsencrypt_certs_dir }}/id_rsa.letsencrypt" -q -N ""'
   args:
     creates: "{{ letsencrypt_certs_dir }}/id_rsa.letsencrypt"
-  when:
-    letsencrypt_account_email != ''
 
 - name: Create Domain key
   command: 'ssh-keygen -t rsa -b 2048 -C "{{ letsencrypt_account_email }}" -f "{{ letsencrypt_certs_dir }}/id_rsa.{{ letsencrypt_pri_cert_domain }}" -q -N ""'
   args:
     creates: '{{ letsencrypt_certs_dir }}/id_rsa.{{ letsencrypt_pri_cert_domain }}'
 
-- name: Create Certificate Signing Request
-  shell: >
+- name: Create Certificate Signing Request # noqa 306
+  shell: >                                 # (the pipe in the jinja tag gives a false postive)
     openssl req -new -nodes -key "{{ letsencrypt_certs_dir }}/id_rsa.{{ letsencrypt_pri_cert_domain }}"
     -out "{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.csr"
     -subj "{{ letsencrypt_csr_subject }}"
@@ -59,7 +57,8 @@
     data: "{{ letsencrypt_challenge }}"
   register: certificate
 
-- name: restart nginx
+- name: restart nginx # noqa 503
+                      # this can't be a handler because it's a compound condition (not just a simple 'changed')
   debug: msg="Reloading nginx due to changed certificate"
   when: certificate.changed and letsencrypt_handle_nginx
   notify:
