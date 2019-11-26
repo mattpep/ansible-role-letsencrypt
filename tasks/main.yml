@@ -17,7 +17,15 @@
     creates: '{{ letsencrypt_certs_dir }}/id_rsa.{{ letsencrypt_pri_cert_domain }}'
 
 - name: Create Certificate Signing Request
-  shell: 'openssl req -new -nodes -key "{{ letsencrypt_certs_dir }}/id_rsa.{{ letsencrypt_pri_cert_domain }}" -out "{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.csr" -subj "{{ letsencrypt_csr_subject }}" {% if letsencrypt_add_cert_domains|length >=1 %} -reqexts SAN -config <(cat /etc/ssl/openssl.cnf ; printf "[SAN]\nsubjectAltName={% for certdomain in letsencrypt_add_cert_domains %}DNS.{{ loop.index }}:{{ certdomain }}{% if loop.index != loop.length %},{% endif %}{% endfor %}"{% endif %})'
+  shell: >
+    openssl req -new -nodes -key "{{ letsencrypt_certs_dir }}/id_rsa.{{ letsencrypt_pri_cert_domain }}"
+    -out "{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.csr"
+    -subj "{{ letsencrypt_csr_subject }}"
+    {% if letsencrypt_add_cert_domains|length >=1 %}
+    -reqexts SAN -config <(cat /etc/ssl/openssl.cnf ; printf "[SAN]\nsubjectAltName=
+    {%- for certdomain in letsencrypt_add_cert_domains -%}DNS.{{ loop.index }}:{{ certdomain }}
+      {%- if loop.index != loop.length -%},{%- endif -%}
+    {%- endfor -%}"{%- endif -%})
   args:
     executable: /bin/bash
     creates: '{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.csr'
