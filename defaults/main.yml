@@ -9,4 +9,3 @@ letsencrypt_csr_subject: '{{ letsencrypt_csr_subject_prefix }}/CN={{ letsencrypt
 letsencrypt_site_dir: '/var/www/{{ letsencrypt_pri_cert_domain }}'
 letsencrypt_prod_cert: false
 letsencrypt_handle_nginx: false
-
