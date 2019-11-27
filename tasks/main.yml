@@ -28,6 +28,27 @@
     executable: /bin/bash
     creates: '{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.csr'
 
+
+- name: check whether cert currently exists
+  stat:
+    path: '{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.crt'
+  register: letsencrypt_current_cert
+  changed_when: false
+
+- name: Extract issuing CA from current cert
+  command: 'openssl x509 -in /etc/letsencrypt/{{ letsencrypt_pri_cert_domain }} -issuer -noout'
+  register: current_cert
+  changed_when: false
+  failed_when: current_cert.rc != 0
+  when: letsencrypt_current_cert.stat.exists
+
+- name: Remove staging cert if in prod mode
+  file:
+    path: '{{ letsencrypt_certs_dir }}/{{ letsencrypt_pri_cert_domain }}.crt'
+    state: absent
+  when: letsencrypt_prod_cert and current_cert.stdout|contains('Fake')
+
+  # TODO: do we need to hit the API if we're not going to update the cert (i.e. if it still has lots of validity remaining)
 - name: Issue letsencrypt Challenge
   letsencrypt:
     acme_directory: "{{ letsencrypt_api_endpoint }}"
