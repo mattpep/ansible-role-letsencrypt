@@ -1,5 +1,6 @@
 ---
-letsencrypt_staging_endpoint: https://acme-staging.api.letsencrypt.org/directory
-letsencrypt_prod_endpoint: https://acme-v01.api.letsencrypt.org/directory/
+letsencrypt_staging_endpoint: https://acme-staging-v02.api.letsencrypt.org/directory
+letsencrypt_prod_endpoint: https://acme-v02.api.letsencrypt.org/directory
 
+letsencrypt_csr_subject: '{{ letsencrypt_csr_subject_prefix}}{{ letsencrypt_csr_subject_suffix }}'
 letsencrypt_api_endpoint: "{% if letsencrypt_prod_cert %}{{ letsencrypt_prod_endpoint }}{% else %}{{ letsencrypt_staging_endpoint }}{% endif %}"

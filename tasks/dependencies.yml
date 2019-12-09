@@ -1,0 +1,12 @@
+---
+- name: install openssl dependencies
+  apt:
+    name:
+      - openssl
+      - python3-openssl
+
+- name: install python open ssl deps
+  pip:
+    name:
+      - cryptography
+      - PyOpenSSL

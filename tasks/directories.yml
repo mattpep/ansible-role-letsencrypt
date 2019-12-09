@@ -1,0 +1,13 @@
+---
+- name: Ensure Certificate Directory exists
+  file:
+    dest: '{{ letsencrypt_certs_dir }}'
+    state: directory
+
+- name: make acme challenge directory
+  file:
+    state: directory
+    path: "{{ letsencrypt_challenge_dir }}/{{ item }}"
+  with_items:
+    - .well-known
+    - .well-known/acme-challenge

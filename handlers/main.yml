@@ -1,7 +1,1 @@
 ---
-- name: Store validation tokens
-  copy:
-    # item['resource'] has the prefix '/.well-known/acme-challenge' so we just prepend the sitedir here
-    dest: "{{ letsencrypt_site_dir }}/{{ item.value['http-01']['resource'] }}"
-    content: "{{ item.value['http-01']['resource_value'] }}"
-  with_dict: "{{ letsencrypt_challenge['challenge_data'] }}"

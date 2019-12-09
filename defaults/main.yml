@@ -1,11 +1,13 @@
 ---
-letsencrypt_pri_cert_domain: www.example.com
-letsencrypt_add_cert_domains: []
+letsencrypt_cert_domain: www.example.com
+letsencrypt_cert_domains: []
+letsencrypt_first_domain: '{% if letsencrypt_cert_domains|length >= 1 %}{{ letsencrypt_cert_domains[0] }}{% else %}{{ letsencrypt_cert_domain }}{% endif %}'
 
 letsencrypt_account_email: ''
 letsencrypt_certs_dir: /etc/letsencrypt
-letsencrypt_csr_subject_prefix: '/C=GB/ST=London/L=London/O=ExampleOrg/'
-letsencrypt_csr_subject: '{{ letsencrypt_csr_subject_prefix }}/CN={{ letsencrypt_pri_cert_domain }}'
-letsencrypt_site_dir: '/var/www/{{ letsencrypt_pri_cert_domain }}'
+letsencrypt_challenge_dir: /var/www/html
+letsencrypt_csr_subject_prefix: '/C=GB/ST=London/L=London/O=ExampleOrg'
+letsencrypt_csr_subject_suffix: '{% if letsencrypt_cert_domains|length == 1 %}/CN={{ letsencrypt_cert_domain }}{% endif %}'
+
 letsencrypt_prod_cert: false
 letsencrypt_handle_nginx: false

@@ -1,0 +1,19 @@
+---
+- name: Create account private key
+  openssl_privatekey:
+    path: "{{ letsencrypt_certs_dir }}/account.key"
+
+- name: Generate account public key
+  openssl_publickey:
+    path: "{{ letsencrypt_certs_dir }}/account.pem"
+    privatekey_path: "{{ letsencrypt_certs_dir }}/account.key"
+
+- name: Register account with letsencrypt
+  acme_account:
+    account_key_src: "{{ letsencrypt_certs_dir }}/account.key"
+    state: present
+    terms_agreed: yes
+    acme_version: 2
+    acme_directory: "{{ letsencrypt_api_endpoint }}"
+    contact:
+      - "mailto:{{ letsencrypt_account_email }}"
