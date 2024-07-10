@@ -1,6 +1,11 @@
 LetsEncrypt
 ===========
 
+Repo archived. I've moved over to using [Caddy](https://caddyserver.com/) which manages SSL certs directly.
+
+Original documentation
+======================
+
 A thin-ish wrapper around the `acme\_` modules within ansible to set up a cert for an nginx virtual host, creating an account if necessary, and also reloading nginx if desired.
 
 Requirements
